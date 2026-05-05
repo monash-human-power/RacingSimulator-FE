@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 
@@ -9,19 +9,24 @@ const checks = ["Power Meter", "Smart Trainer", "Heart Rate Monitor", "Rig Calib
 export default function LoadingPage() {
   const [progress, setProgress] = useState(0);
   const router = useRouter();
+  const didNavigateRef = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const next = Math.min(100, prev + 3);
-        if (next === 100) {
-          setTimeout(() => router.push("/session/live"), 600);
-        }
-        return next;
+        if (prev >= 100) return prev;
+        return Math.min(100, prev + 3);
       });
     }, 120);
     return () => clearInterval(interval);
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (progress < 100 || didNavigateRef.current) return;
+    didNavigateRef.current = true;
+    const timeout = setTimeout(() => router.replace("/session/live"), 600);
+    return () => clearTimeout(timeout);
+  }, [progress, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#070b14] px-6">

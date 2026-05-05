@@ -11,6 +11,10 @@ export function formatDuration(totalSec: number): string {
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 }
 
+export function secondsToLapLabel(totalSec: number): string {
+  return formatDuration(totalSec).slice(3);
+}
+
 export function generateInitialLiveState(config: SetupConfig): LiveSessionState {
   return {
     isActive: true,
@@ -85,6 +89,7 @@ export function tickLiveState(prev: LiveSessionState, laps: number): LiveSession
 }
 
 export function buildSessionSummary(
+  riderId: string,
   riderName: string,
   courseName: string,
   mode: SetupConfig["raceMode"],
@@ -107,22 +112,23 @@ export function buildSessionSummary(
 
   const totalSec = Math.max(1, liveState.elapsedSec);
   const lapSec = Math.round(totalSec / Math.max(laps, 1));
-  const lapTimes = Array.from({ length: laps }).map((_, index) =>
-    formatDuration(lapSec + Math.round(Math.sin(index) * 9)).slice(3),
-  );
+  const lapTimesSec = Array.from({ length: laps }).map((_, index) => lapSec + Math.round(Math.sin(index) * 9));
+  const lapTimes = lapTimesSec.map((lap) => secondsToLapLabel(lap));
 
   return {
     id: `s-${Date.now()}`,
-    riderId: "mock-current",
+    riderId,
     riderName,
     courseName,
     mode,
     finalTime: formatDuration(totalSec),
+    finalTimeSec: totalSec,
     avgPower,
     avgSpeed,
     avgHeartRate,
     efficiency,
     lapTimes,
+    lapTimesSec,
     createdAt: "Just now",
   };
 }

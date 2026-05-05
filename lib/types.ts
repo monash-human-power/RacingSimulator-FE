@@ -11,6 +11,7 @@ export interface Rider {
   weightKg: number;
   experience: ExperienceLevel;
   notes: string;
+  createdAt?: string;
 }
 
 export interface Course {
@@ -19,6 +20,8 @@ export interface Course {
   lengthKm: number;
   terrain: string;
   difficulty: "Low" | "Medium" | "High";
+  elevationGainM?: number;
+  defaultLaps?: number;
 }
 
 export interface ClimateProfile {
@@ -42,11 +45,13 @@ export interface SessionSummary {
   courseName: string;
   mode: RaceMode;
   finalTime: string;
+  finalTimeSec: number;
   avgPower: number;
   avgSpeed: number;
   avgHeartRate: number;
   efficiency: number;
   lapTimes: string[];
+  lapTimesSec?: number[];
   createdAt: string;
 }
 
@@ -59,6 +64,7 @@ export interface SetupConfig {
   distanceKm: number;
   climate: ClimateProfile;
   skipDeviceChecks: boolean;
+  raceSetupId?: string;
 }
 
 export interface LiveSessionState {
@@ -77,4 +83,40 @@ export interface LiveSessionState {
   effortZone: string;
   targetPower: number;
   metricsTimeline: SessionMetric[];
+}
+
+export interface UserIdentity {
+  id: string;
+  email: string | null;
+}
+
+export interface UserProfile {
+  userId: string;
+  displayName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Preferences {
+  units: "Metric" | "Imperial";
+  showMapOverlay: boolean;
+  showPerformanceDelta: boolean;
+  defaultRaceMode: RaceMode;
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  userId: string;
+  riderName: string;
+  courseName: string;
+  raceMode: RaceMode;
+  finalTimeSec: number;
+  finalTime: string;
+  efficiency: number;
+  bestLapSec: number;
+  bestLap: string;
+  avgPower: number;
+  avgSpeed: number;
+  avgHeartRate: number;
+  createdAt: string;
 }

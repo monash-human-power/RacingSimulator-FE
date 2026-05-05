@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { useAppContext } from "@/lib/app-context";
 
 export default function HistoryPage() {
-  const { sessionHistory } = useAppContext();
+  const { sessionHistory, setLastSummary } = useAppContext();
 
   return (
     <AppShell title="Session History" subtitle="Review previously completed training sessions.">
@@ -33,7 +33,11 @@ export default function HistoryPage() {
                   <p>Power: {session.avgPower}W</p>
                   <p>Speed: {session.avgSpeed}km/h</p>
                   <p>HR: {session.avgHeartRate}bpm</p>
-                  <Link href="/session/review" className="rounded-lg border border-white/20 px-3 py-1.5 hover:bg-white/10">
+                  <Link
+                    href="/session/review"
+                    onClick={() => setLastSummary(session)}
+                    className="rounded-lg border border-white/20 px-3 py-1.5 hover:bg-white/10"
+                  >
                     Open Analysis
                   </Link>
                 </div>

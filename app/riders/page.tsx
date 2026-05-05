@@ -17,36 +17,43 @@ const emptyForm: Omit<Rider, "id"> = {
 };
 
 export default function RidersPage() {
-  const { riders, setRiders } = useAppContext();
+  const { riders, createRider, updateRider, deleteRider } = useAppContext();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Rider, "id">>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const editingRider = useMemo(
     () => riders.find((rider) => rider.id === editingId) ?? null,
     [editingId, riders],
   );
 
-  function submitForm(e: FormEvent) {
+  async function submitForm(e: FormEvent) {
     e.preventDefault();
     if (!form.firstName.trim() || !form.lastName.trim()) return;
+    setSubmitting(true);
+    setStatus(null);
 
     if (editingRider) {
-      setRiders((prev) =>
-        prev.map((r) => (r.id === editingRider.id ? { ...r, ...form, weightKg: Number(form.weightKg) } : r)),
-      );
+      const result = await updateRider(editingRider.id, { ...form, weightKg: Number(form.weightKg) });
+      if (result.error) {
+        setStatus(result.error);
+        setSubmitting(false);
+        return;
+      }
     } else {
-      setRiders((prev) => [
-        {
-          id: `r-${Date.now()}`,
-          ...form,
-          weightKg: Number(form.weightKg),
-        },
-        ...prev,
-      ]);
+      const result = await createRider({ ...form, weightKg: Number(form.weightKg) });
+      if (result.error) {
+        setStatus(result.error);
+        setSubmitting(false);
+        return;
+      }
     }
 
     setForm(emptyForm);
     setEditingId(null);
+    setSubmitting(false);
+    setStatus(editingRider ? "Rider updated." : "Rider created.");
   }
 
   function startEdit(rider: Rider) {
@@ -92,6 +99,12 @@ export default function RidersPage() {
                   </button>
                 </div>
                 <p className="mt-3 text-sm text-slate-300">{rider.notes}</p>
+                <button
+                  onClick={() => void deleteRider(rider.id)}
+                  className="mt-3 rounded-lg border border-rose-300/40 px-3 py-1.5 text-xs text-rose-200 hover:bg-rose-400/10"
+                >
+                  Delete
+                </button>
               </div>
             ))
           )}
@@ -142,8 +155,11 @@ export default function RidersPage() {
             className="mt-3 min-h-28 w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm"
           />
           <div className="mt-4 flex gap-2">
-            <button className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300">
-              {editingRider ? "Save Changes" : "Create Rider"}
+            <button
+              disabled={submitting}
+              className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-60"
+            >
+              {submitting ? "Saving..." : editingRider ? "Save Changes" : "Create Rider"}
             </button>
             {editingRider ? (
               <button
@@ -158,6 +174,7 @@ export default function RidersPage() {
               </button>
             ) : null}
           </div>
+          {status ? <p className="mt-3 text-sm text-cyan-200">{status}</p> : null}
         </form>
       </section>
     </AppShell>

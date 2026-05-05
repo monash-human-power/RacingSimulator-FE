@@ -10,6 +10,24 @@ export default function DashboardPage() {
   const rider = riders.find((r) => r.id === setupConfig.riderId) ?? riders[0];
   const course = courses.find((c) => c.id === setupConfig.courseId) ?? courses[0];
 
+  const avgEfficiency = sessionHistory.length
+    ? Math.round(sessionHistory.reduce((sum, s) => sum + s.efficiency, 0) / sessionHistory.length)
+    : 0;
+  const bestLap = sessionHistory
+    .flatMap((s) => s.lapTimes)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))[0];
+
+  if (!rider || !course) {
+    return (
+      <AppShell title="Performance Dashboard" subtitle="Recent sessions, rider overview, and quick launch actions.">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-slate-300">
+          Loading account data...
+        </section>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       title="Performance Dashboard"
@@ -17,9 +35,9 @@ export default function DashboardPage() {
     >
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard label="Total Riders" value={String(riders.length)} />
-        <StatCard label="Sessions This Week" value="12" delta={7} />
-        <StatCard label="Average Efficiency" value="90%" delta={3} />
-        <StatCard label="Best Lap" value="07:54" delta={2} />
+        <StatCard label="Total Sessions" value={String(sessionHistory.length)} />
+        <StatCard label="Average Efficiency" value={`${avgEfficiency}%`} />
+        <StatCard label="Best Lap" value={bestLap || "--:--"} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">

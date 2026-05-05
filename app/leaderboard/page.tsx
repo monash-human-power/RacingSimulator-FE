@@ -1,32 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { useAppContext } from "@/lib/app-context";
 
 export default function LeaderboardPage() {
-  const { sessionHistory } = useAppContext();
+  const { leaderboard, loadLeaderboard, courses } = useAppContext();
   const [filter, setFilter] = useState<"time" | "efficiency" | "lap">("time");
+  const [courseId, setCourseId] = useState<string>("");
+  const [mode, setMode] = useState<string>("");
 
-  const rows = useMemo(() => {
-    const copied = [...sessionHistory];
-    if (filter === "efficiency") {
-      copied.sort((a, b) => b.efficiency - a.efficiency);
-    } else if (filter === "lap") {
-      copied.sort((a, b) => a.lapTimes[0].localeCompare(b.lapTimes[0]));
-    } else {
-      copied.sort((a, b) => a.finalTime.localeCompare(b.finalTime));
-    }
-    return copied;
-  }, [filter, sessionHistory]);
+  useEffect(() => {
+    void loadLeaderboard({
+      sort: filter,
+      mapId: courseId || undefined,
+      raceMode: mode || undefined,
+    });
+  }, [courseId, filter, loadLeaderboard, mode]);
 
   return (
     <AppShell title="Leaderboard" subtitle="Rank riders by time, efficiency, or lap performance.">
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold">Global Rankings</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[
               { id: "time", label: "By Time" },
               { id: "efficiency", label: "By Efficiency" },
@@ -42,10 +40,42 @@ export default function LeaderboardPage() {
                 {item.label}
               </button>
             ))}
+            <select
+              value={courseId}
+              onChange={(event) => setCourseId(event.target.value)}
+              className="rounded-lg border border-white/20 bg-transparent px-2 py-1 text-xs"
+            >
+              <option value="" className="bg-slate-900">
+                All Courses
+              </option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id} className="bg-slate-900">
+                  {course.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={mode}
+              onChange={(event) => setMode(event.target.value)}
+              className="rounded-lg border border-white/20 bg-transparent px-2 py-1 text-xs"
+            >
+              <option value="" className="bg-slate-900">
+                All Modes
+              </option>
+              <option value="Endurance" className="bg-slate-900">
+                Endurance
+              </option>
+              <option value="Time Trial" className="bg-slate-900">
+                Time Trial
+              </option>
+              <option value="Sprint Intervals" className="bg-slate-900">
+                Sprint Intervals
+              </option>
+            </select>
           </div>
         </div>
 
-        {rows.length === 0 ? (
+        {leaderboard.length === 0 ? (
           <EmptyState
             title="No leaderboard entries"
             description="Finish at least one session to generate ranking data."
@@ -66,14 +96,14 @@ export default function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, idx) => (
+                {leaderboard.map((row, idx) => (
                   <tr key={row.id} className="border-t border-white/10">
                     <td className="py-3">#{idx + 1}</td>
                     <td>{row.riderName}</td>
                     <td>{row.courseName}</td>
                     <td>{row.finalTime}</td>
                     <td>{row.efficiency}%</td>
-                    <td>{row.lapTimes[0]}</td>
+                    <td>{row.bestLap}</td>
                   </tr>
                 ))}
               </tbody>

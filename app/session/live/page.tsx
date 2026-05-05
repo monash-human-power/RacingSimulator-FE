@@ -7,10 +7,21 @@ import { LiveOverlays } from "@/components/live-overlays";
 import { RaceScene } from "@/components/race-scene";
 import { useAppContext } from "@/lib/app-context";
 import { buildSessionSummary, generateInitialLiveState, tickLiveState } from "@/lib/session-utils";
+import { api } from "@/lib/api";
 
 export default function LiveSessionPage() {
-  const { riders, courses, setupConfig, liveSession, setLiveSession, setSessionHistory, setLastSummary } =
-    useAppContext();
+  const {
+    riders,
+    courses,
+    setupConfig,
+    saveSetupConfig,
+    liveSession,
+    setLiveSession,
+    activeSessionId,
+    setActiveSessionId,
+    setSessionHistory,
+    setLastSummary,
+  } = useAppContext();
 
   const rider = riders.find((r) => r.id === setupConfig.riderId) ?? riders[0];
   const course = courses.find((c) => c.id === setupConfig.courseId) ?? courses[0];
@@ -20,6 +31,16 @@ export default function LiveSessionPage() {
       setLiveSession(generateInitialLiveState(setupConfig));
     }
   }, [liveSession, setLiveSession, setupConfig]);
+
+  useEffect(() => {
+    if (activeSessionId || !setupConfig.riderId || !setupConfig.courseId) return;
+    async function start() {
+      await saveSetupConfig(setupConfig, "active");
+      const created = await api.startSession(setupConfig);
+      setActiveSessionId(created.id);
+    }
+    void start();
+  }, [activeSessionId, saveSetupConfig, setActiveSessionId, setupConfig]);
 
   useEffect(() => {
     if (!liveSession) return;
@@ -38,21 +59,46 @@ export default function LiveSessionPage() {
   }, [liveSession?.distanceCompletedKm]);
 
   function handleFinish() {
-    if (!liveSession) return;
+    if (!liveSession || !activeSessionId || !rider || !course) return;
     const summary = buildSessionSummary(
+      rider.id,
       `${rider.firstName} ${rider.lastName}`,
       course.name,
       setupConfig.raceMode,
       liveSession,
       setupConfig.laps,
     );
-    setLastSummary(summary);
-    setSessionHistory((prev) => [summary, ...prev]);
-    setLiveSession(null);
-    window.location.href = "/session/review";
+    void (async () => {
+      await api.completeSession(activeSessionId, {
+        finalTimeSec: summary.finalTimeSec,
+        avgPower: summary.avgPower,
+        avgSpeed: summary.avgSpeed,
+        avgHeartRate: summary.avgHeartRate,
+        efficiency: summary.efficiency,
+        lapTimesSec: summary.lapTimesSec ?? [],
+        metricsTimeline: liveSession.metricsTimeline,
+        analysisSummary: {
+          peakOutputNote: "Lap 3 sprint sustained +42W over target.",
+          dropZoneNote: "Cadence dip in technical descent section.",
+          keyMomentNote: "Recovered pacing within 22 seconds after surge.",
+          insight:
+            "Strong mid-session consistency with late fatigue trend. Next target: lift cadence in final 20% while maintaining heart-rate control.",
+          actualVsTarget: { powerTarget: 275, speedTarget: 33, hrCap: 165 },
+        },
+      });
+      await saveSetupConfig(setupConfig, "completed");
+      setLastSummary(summary);
+      setSessionHistory((prev) => [summary, ...prev]);
+      setLiveSession(null);
+      setActiveSessionId(null);
+      window.location.href = "/session/review";
+    })();
   }
 
   if (!liveSession) {
+    return <div className="min-h-screen bg-[#070b14]" />;
+  }
+  if (!rider || !course) {
     return <div className="min-h-screen bg-[#070b14]" />;
   }
 

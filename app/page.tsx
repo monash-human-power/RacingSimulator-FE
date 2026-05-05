@@ -19,22 +19,22 @@ export default function Home() {
             Train Like Race Day Is Tonight.
           </h1>
           <p className="mt-5 max-w-xl text-slate-300">
-            Immersive rider workflows from setup to post-ride analytics. Everything here is mocked to
-            prototype a real high-performance simulator experience.
+            Immersive rider workflows from setup to post-ride analytics with backend persistence powered by
+            Supabase + PostgreSQL APIs.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
+              href="/auth"
               className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
             >
-              Enter Training Console
+              Sign In to Continue
               <ArrowRight size={16} />
             </Link>
             <Link
               href="/setup"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm transition hover:bg-white/10"
             >
-              Continue Without Login
+              Explore Landing
               <PlayCircle size={16} />
             </Link>
           </div>
@@ -45,12 +45,12 @@ export default function Home() {
             <input className="w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm" defaultValue="coach@racesim.io" />
             <input className="w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm" type="password" defaultValue="password123" />
             <button className="w-full rounded-xl bg-indigo-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-indigo-300">
-              Sign In (UI Only)
+              Sign In
             </button>
           </div>
           <div className="mt-6 rounded-xl bg-slate-900/70 p-4 text-xs text-slate-400">
-            Live preview includes ride setup, loading checks, animated race overlays, and post-session
-            analysis without backend services.
+            Ride simulation and device checks remain mocked, while riders, setups, sessions, leaderboard,
+            and preferences are now API-backed.
           </div>
         </section>
       </main>

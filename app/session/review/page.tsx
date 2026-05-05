@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { LineChart } from "@/components/line-chart";
@@ -8,7 +9,14 @@ import { StatCard } from "@/components/stat-card";
 import { useAppContext } from "@/lib/app-context";
 
 export default function SessionReviewPage() {
-  const { lastSummary } = useAppContext();
+  const { lastSummary, sessionDetailById, loadSessionDetail } = useAppContext();
+  const detail = lastSummary ? sessionDetailById[lastSummary.id] : undefined;
+
+  useEffect(() => {
+    if (!lastSummary) return;
+    if (detail) return;
+    void loadSessionDetail(lastSummary.id);
+  }, [detail, lastSummary, loadSessionDetail]);
 
   if (!lastSummary) {
     return (
@@ -23,11 +31,17 @@ export default function SessionReviewPage() {
     );
   }
 
-  const chartPoints = Array.from({ length: 60 }).map((_, i) => ({
-    x: i + 1,
-    speed: lastSummary.avgSpeed + Math.sin(i / 6) * 2 + Math.cos(i / 5) * 0.8,
-    power: lastSummary.avgPower + Math.sin(i / 4) * 20 + Math.cos(i / 3) * 6,
-  }));
+  const chartPoints = (detail?.metricsTimeline ?? []).length
+    ? (detail?.metricsTimeline ?? []).map((point) => ({
+        x: point.t,
+        speed: point.speed,
+        power: point.power,
+      }))
+    : Array.from({ length: 60 }).map((_, i) => ({
+        x: i + 1,
+        speed: lastSummary.avgSpeed + Math.sin(i / 6) * 2 + Math.cos(i / 5) * 0.8,
+        power: lastSummary.avgPower + Math.sin(i / 4) * 20 + Math.cos(i / 3) * 6,
+      }));
 
   return (
     <AppShell title="Post-Session Analysis" subtitle="Replay key moments and compare actual versus target output.">
@@ -60,15 +74,21 @@ export default function SessionReviewPage() {
           <div className="mt-4 grid gap-3 md:grid-cols-3 text-sm">
             <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 p-3">
               <p className="font-semibold text-emerald-200">Peak Output</p>
-              <p className="text-slate-300">Lap 3 sprint sustained +42W over target.</p>
+              <p className="text-slate-300">
+                {detail?.analysis?.peak_output_note ?? "Lap 3 sprint sustained +42W over target."}
+              </p>
             </div>
             <div className="rounded-xl border border-amber-300/30 bg-amber-400/10 p-3">
               <p className="font-semibold text-amber-200">Drop Zone</p>
-              <p className="text-slate-300">Cadence dip in technical descent section.</p>
+              <p className="text-slate-300">
+                {detail?.analysis?.drop_zone_note ?? "Cadence dip in technical descent section."}
+              </p>
             </div>
             <div className="rounded-xl border border-cyan-300/30 bg-cyan-400/10 p-3">
               <p className="font-semibold text-cyan-200">Key Moment</p>
-              <p className="text-slate-300">Recovered pacing within 22 seconds after surge.</p>
+              <p className="text-slate-300">
+                {detail?.analysis?.key_moment_note ?? "Recovered pacing within 22 seconds after surge."}
+              </p>
             </div>
           </div>
         </div>
@@ -83,8 +103,8 @@ export default function SessionReviewPage() {
           <div className="mt-5 rounded-xl border border-indigo-300/25 bg-indigo-400/10 p-4">
             <p className="font-semibold text-indigo-100">Performance Insight</p>
             <p className="mt-1 text-sm text-slate-300">
-              Strong mid-session consistency with late fatigue trend. Next target: lift cadence in final 20% while
-              maintaining heart-rate control.
+              {detail?.analysis?.insight ??
+                "Strong mid-session consistency with late fatigue trend. Next target: lift cadence in final 20% while maintaining heart-rate control."}
             </p>
           </div>
           <Link href="/setup" className="mt-4 inline-flex rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-900">

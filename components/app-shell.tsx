@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Activity, Flag, Gauge, Medal, Settings, Users } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Activity, Flag, Gauge, LogOut, Medal, Settings, UserRound, Users } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAppContext } from "@/lib/app-context";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -12,6 +13,7 @@ const links = [
   { href: "/history", label: "History", icon: Activity },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/account", label: "Account", icon: UserRound },
 ];
 
 export function AppShell({
@@ -24,6 +26,13 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, authLoading, signOut, profile } = useAppContext();
+
+  if (!authLoading && !user) {
+    router.replace("/auth");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100">
@@ -32,6 +41,7 @@ export function AppShell({
           <div className="mb-5 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 p-4">
             <p className="text-xs text-slate-300">Race Simulation</p>
             <p className="text-lg font-semibold">Training Console</p>
+            <p className="mt-1 text-xs text-slate-300">{profile?.displayName ?? user?.email ?? "Rider"}</p>
           </div>
           <nav className="space-y-1">
             {links.map((link) => {
@@ -51,6 +61,13 @@ export function AppShell({
               );
             })}
           </nav>
+          <button
+            onClick={() => void signOut().then(() => router.replace("/auth"))}
+            className="mt-6 flex w-full items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+          >
+            <LogOut size={15} />
+            Sign Out
+          </button>
         </aside>
 
         <main className="w-full">

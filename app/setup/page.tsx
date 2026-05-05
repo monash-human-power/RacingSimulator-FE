@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { useAppContext } from "@/lib/app-context";
 import { BikeMode, RaceMode } from "@/lib/types";
@@ -10,15 +10,38 @@ const bikeModes: BikeMode[] = ["Road Bike", "TT Bike", "Triathlon Rig"];
 const raceModes: RaceMode[] = ["Endurance", "Time Trial", "Sprint Intervals"];
 
 export default function SetupPage() {
-  const { riders, courses, setupConfig, setSetupConfig } = useAppContext();
+  const { riders, courses, setupConfig, setSetupConfig, saveSetupConfig } = useAppContext();
   const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
   const selectedCourse = useMemo(
-    () => courses.find((course) => course.id === setupConfig.courseId) ?? courses[0],
+    () => courses.find((course) => course.id === setupConfig.courseId) ?? courses[0] ?? null,
     [courses, setupConfig.courseId],
   );
+  const selectedRider = riders.find((rider) => rider.id === setupConfig.riderId) ?? null;
 
   const canProceed = riders.length > 0 && Boolean(setupConfig.riderId) && Boolean(setupConfig.courseId);
+
+  if (!courses.length) {
+    return (
+      <AppShell title="Ride Setup" subtitle="Configure rider, mode, course, and simulation conditions.">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-slate-300">
+          Loading setup data...
+        </section>
+      </AppShell>
+    );
+  }
+
+  async function startSessionFlow() {
+    setSaving(true);
+    try {
+      await saveSetupConfig(setupConfig, "draft");
+      router.push(setupConfig.skipDeviceChecks ? "/session/live" : "/session/loading");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <AppShell title="Ride Setup" subtitle="Configure rider, mode, course, and simulation conditions.">
@@ -136,7 +159,7 @@ export default function SetupPage() {
                           return {
                             ...prev,
                             laps,
-                            distanceKm: Number((selectedCourse.lengthKm * laps).toFixed(1)),
+                            distanceKm: Number((((selectedCourse?.lengthKm ?? 0) || 0) * laps).toFixed(1)),
                           };
                         })
                       }
@@ -227,12 +250,13 @@ export default function SetupPage() {
                   connections before race view starts.
                 </p>
               </div>
-              <Link
-                href={setupConfig.skipDeviceChecks ? "/session/live" : "/session/loading"}
-                className="mt-5 inline-flex rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-cyan-300"
+              <button
+                onClick={() => void startSessionFlow()}
+                disabled={saving}
+                className="mt-5 inline-flex rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-cyan-300 disabled:opacity-60"
               >
-                Start Session
-              </Link>
+                {saving ? "Saving..." : "Start Session"}
+              </button>
             </>
           ) : null}
 
@@ -256,9 +280,9 @@ export default function SetupPage() {
         <aside className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm font-semibold">Configuration Summary</p>
           <div className="mt-3 space-y-2 text-sm text-slate-300">
-            <p>Rider ID: {setupConfig.riderId || "Not selected"}</p>
+            <p>Rider: {selectedRider ? `${selectedRider.firstName} ${selectedRider.lastName}` : "Not selected"}</p>
             <p>Bike: {setupConfig.bikeMode}</p>
-            <p>Course: {selectedCourse.name}</p>
+            <p>Course: {selectedCourse?.name ?? "Not selected"}</p>
             <p>Laps: {setupConfig.laps}</p>
             <p>Distance: {setupConfig.distanceKm.toFixed(1)} km</p>
             <p>Mode: {setupConfig.raceMode}</p>

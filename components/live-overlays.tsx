@@ -44,10 +44,10 @@ function Overlay({
   detail?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/45 p-3 backdrop-blur">
-      <p className="text-[11px] uppercase tracking-[0.15em] text-slate-400">{label}</p>
+    <div className="rounded-xl border border-slate-200/80 bg-white/78 p-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur">
+      <p className="text-[11px] uppercase tracking-[0.15em] text-slate-600">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
-      {detail ? <p className="text-xs text-slate-400">{detail}</p> : null}
+      {detail ? <p className="text-xs text-slate-600">{detail}</p> : null}
     </div>
   );
 }

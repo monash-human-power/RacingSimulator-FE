@@ -2,6 +2,7 @@ import { LiveSessionState, SessionSummary, SetupConfig } from "@/lib/types";
 
 const sections = ["Launch", "Tempo Climb", "Technical Descent", "Final Push"];
 const zones = ["Z2 Base", "Z3 Tempo", "Z4 Threshold", "Z5 Attack"];
+const SIMULATION_TIME_SCALE = 8;
 
 export function formatDuration(totalSec: number): string {
   const h = Math.floor(totalSec / 3600);
@@ -18,9 +19,9 @@ export function generateInitialLiveState(config: SetupConfig): LiveSessionState 
     totalDistanceKm: Number(config.distanceKm.toFixed(1)),
     distanceCompletedKm: 0,
     currentLap: 1,
-    speed: 28,
-    power: 240,
-    cadence: 84,
+    speed: 42,
+    power: 270,
+    cadence: 92,
     heartRate: 132,
     projectedFinish: "00:39:00",
     sectionLabel: sections[0],
@@ -36,9 +37,9 @@ export function tickLiveState(prev: LiveSessionState, laps: number): LiveSession
   const elapsedSec = prev.elapsedSec + 1;
   const progress = Math.min(1, prev.distanceCompletedKm / prev.totalDistanceKm);
   const wave = Math.sin(elapsedSec / 8);
-  const speed = clamp(27 + wave * 4 + Math.random() * 2.2, 20, 46);
-  const power = clamp(255 + Math.sin(elapsedSec / 5) * 40 + Math.random() * 12, 170, 450);
-  const cadence = clamp(86 + Math.sin(elapsedSec / 7) * 8 + Math.random() * 3, 65, 118);
+  const speed = clamp(44 + wave * 7 + Math.random() * 4.5, 32, 76);
+  const power = clamp(275 + Math.sin(elapsedSec / 5) * 52 + Math.random() * 18, 180, 520);
+  const cadence = clamp(92 + Math.sin(elapsedSec / 7) * 10 + Math.random() * 4, 70, 125);
   const heartRate = clamp(
     138 + Math.sin(elapsedSec / 15) * 11 + progress * 24 + Math.random() * 2,
     120,
@@ -47,7 +48,7 @@ export function tickLiveState(prev: LiveSessionState, laps: number): LiveSession
 
   const distanceCompletedKm = Math.min(
     prev.totalDistanceKm,
-    prev.distanceCompletedKm + speed / 3600,
+    prev.distanceCompletedKm + (speed / 3600) * SIMULATION_TIME_SCALE,
   );
   const lapDistance = prev.totalDistanceKm / laps;
   const currentLap = Math.min(laps, Math.max(1, Math.ceil(distanceCompletedKm / lapDistance)));

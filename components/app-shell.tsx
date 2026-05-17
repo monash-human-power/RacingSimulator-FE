@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Flag, Gauge, LogOut, Medal, Settings, UserRound, Users } from "lucide-react";
+import { Activity, Bluetooth, Flag, Gauge, LogOut, Medal, Settings, UserRound, Users } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppContext } from "@/lib/app-context";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/setup", label: "Start Ride", icon: Flag },
+  { href: "/devices", label: "Devices", icon: Bluetooth },
   { href: "/riders", label: "Riders", icon: Users },
   { href: "/history", label: "History", icon: Activity },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal },

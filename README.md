@@ -13,13 +13,14 @@ This repository must not contain direct database logic or Supabase admin/busines
 
 1. Copy `.env.example` to `.env.local`.
 2. Set `NEXT_PUBLIC_API_BASE_URL` to your backend API (default `http://localhost:4000`).
-3. Install dependencies:
+3. Set `NEXT_PUBLIC_ENGINE_WS_URL` to the BLE engine WebSocket (default `ws://localhost:8000/ws/engine`). Start the engine from `RacingSimulator-BE` with `npm run dev:engine`.
+4. Install dependencies:
 
 ```bash
 npm install
 ```
 
-4. Run frontend:
+5. Run frontend:
 
 ```bash
 npm run dev
@@ -34,3 +35,5 @@ npm run dev
 - Session analysis persistence
 - Leaderboard queries
 - Preferences persistence
+- Device Lab (`/devices`) — BLE scan/connect, live trainer telemetry, ERG controls
+- Live sessions can use real KICKR/FTMS data when a trainer is connected

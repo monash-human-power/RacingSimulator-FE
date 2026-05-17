@@ -244,7 +244,7 @@ export const api = {
         avg_heart_rate: number;
         created_at: string;
         maps: { name: string } | null;
-        profiles: { display_name: string } | null;
+        sessions: { riders: { first_name: string; last_name: string } | null } | null;
       }>
     >(`/api/leaderboard?${search.toString()}`);
     return rows.map(mapLeaderboardEntry);

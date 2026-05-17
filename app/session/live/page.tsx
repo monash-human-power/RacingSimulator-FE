@@ -6,6 +6,7 @@ import { Pause, Play, Square } from "lucide-react";
 import { LiveOverlays } from "@/components/live-overlays";
 import { RaceScene } from "@/components/race-scene";
 import { useAppContext } from "@/lib/app-context";
+import { applyDeviceTelemetry, readUseDeviceDataFlag } from "@/lib/device-live";
 import { buildSessionSummary, generateInitialLiveState, tickLiveState } from "@/lib/session-utils";
 import { api } from "@/lib/api";
 
@@ -21,7 +22,12 @@ export default function LiveSessionPage() {
     setActiveSessionId,
     setSessionHistory,
     setLastSummary,
+    deviceTelemetry,
+    deviceConnected,
   } = useAppContext();
+
+  const useDeviceData =
+    !setupConfig.skipDeviceChecks && readUseDeviceDataFlag() && deviceConnected && Boolean(deviceTelemetry);
 
   const rider = riders.find((r) => r.id === setupConfig.riderId) ?? riders[0];
   const course = courses.find((c) => c.id === setupConfig.courseId) ?? courses[0];
@@ -45,10 +51,16 @@ export default function LiveSessionPage() {
   useEffect(() => {
     if (!liveSession) return;
     const interval = setInterval(() => {
-      setLiveSession((prev) => (prev ? tickLiveState(prev, setupConfig.laps) : prev));
+      setLiveSession((prev) => {
+        if (!prev) return prev;
+        if (useDeviceData && deviceTelemetry) {
+          return applyDeviceTelemetry(prev, deviceTelemetry, setupConfig.laps);
+        }
+        return tickLiveState(prev, setupConfig.laps);
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [liveSession, setLiveSession, setupConfig.laps]);
+  }, [liveSession, setLiveSession, setupConfig.laps, useDeviceData, deviceTelemetry]);
 
   useEffect(() => {
     if (!liveSession) return;
@@ -114,6 +126,13 @@ export default function LiveSessionPage() {
               {course.name} • {setupConfig.raceMode}
             </p>
             <p className="text-sm text-slate-600">{`${rider.firstName} ${rider.lastName}`}</p>
+            {useDeviceData ? (
+              <p className="mt-1 text-xs font-medium text-emerald-700">
+                Live trainer data • {deviceTelemetry?.deviceName ?? "BLE device"}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-slate-500">Simulator mode</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button

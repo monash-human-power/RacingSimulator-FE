@@ -3,8 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { formatDuration, secondsToLapLabel } from "@/lib/session-utils";
+import { deviceApi } from "@/lib/api/devices";
+import { useEngineWebSocket } from "@/lib/hooks/use-engine-websocket";
 import {
   Course,
+  DeviceState,
+  DeviceTelemetry,
   LeaderboardEntry,
   LiveSessionState,
   Preferences,
@@ -68,6 +72,10 @@ interface AppContextValue {
   savePreferences: (next: Preferences) => Promise<{ error: string | null }>;
   sessionDetailById: Record<string, Awaited<ReturnType<typeof api.getSessionDetail>>>;
   loadSessionDetail: (sessionId: string) => Promise<void>;
+  deviceTelemetry: DeviceTelemetry | null;
+  deviceWsStatus: string;
+  deviceConnected: boolean;
+  refreshDeviceState: () => Promise<DeviceState | null>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -87,6 +95,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [sessionDetailById, setSessionDetailById] = useState<Record<string, Awaited<ReturnType<typeof api.getSessionDetail>>>>({});
+  const { telemetry: deviceTelemetry, status: deviceWsStatus } = useEngineWebSocket(Boolean(user));
+  const deviceConnected = Boolean(deviceTelemetry?.connected);
 
   const refreshAllData = useCallback(async () => {
     if (!user) return;
@@ -147,8 +157,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadLeaderboard = useCallback(
     async (params?: { mapId?: string; raceMode?: string; sort?: "time" | "efficiency" | "lap" }) => {
-      const rows = await api.getLeaderboard(params ?? {});
-      setLeaderboard(rows);
+      try {
+        const rows = await api.getLeaderboard(params ?? {});
+        setLeaderboard(rows);
+      } catch {
+        setLeaderboard([]);
+      }
     },
     [],
   );
@@ -296,6 +310,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const refreshDeviceState = useCallback(async () => {
+    try {
+      return await deviceApi.getState();
+    } catch {
+      return null;
+    }
+  }, []);
+
   const loadSessionDetail = useCallback(async (sessionId: string) => {
     const detail = await api.getSessionDetail(sessionId);
     setSessionDetailById((prev) => ({ ...prev, [sessionId]: detail }));
@@ -346,6 +368,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     savePreferences,
     sessionDetailById,
     loadSessionDetail,
+    deviceTelemetry,
+    deviceWsStatus,
+    deviceConnected,
+    refreshDeviceState,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

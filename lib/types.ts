@@ -104,6 +104,36 @@ export interface Preferences {
   defaultRaceMode: RaceMode;
 }
 
+export interface ScannedDevice {
+  name: string;
+  address: string;
+  isTrainer: boolean;
+}
+
+export interface DeviceTelemetry {
+  speedMs: number;
+  powerW: number;
+  cadenceRpm: number | null;
+  heartRateBpm: number | null;
+  resistanceLevel: number | null;
+  averagePowerW: number | null;
+  totalDistanceM: number | null;
+  connected: boolean;
+  deviceName: string | null;
+  receivedAt: number;
+}
+
+export interface DeviceState {
+  connected: boolean;
+  ble: {
+    connected?: boolean;
+    device_name?: string | null;
+    device_address?: string | null;
+    bike?: Record<string, unknown>;
+  } | null;
+  engine: Record<string, unknown> | null;
+}
+
 export interface LeaderboardEntry {
   id: string;
   userId: string;

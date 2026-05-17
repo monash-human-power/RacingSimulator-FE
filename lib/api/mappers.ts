@@ -98,12 +98,13 @@ export function mapLeaderboardEntry(row: {
   avg_heart_rate: number;
   created_at: string;
   maps?: { name: string } | null;
-  profiles?: { display_name: string } | null;
+  sessions?: { riders: { first_name: string; last_name: string } | null } | null;
 }): LeaderboardEntry {
+  const rider = row.sessions?.riders;
   return {
     id: row.id,
     userId: row.user_id,
-    riderName: row.profiles?.display_name ?? "Rider",
+    riderName: rider ? `${rider.first_name} ${rider.last_name}` : "Rider",
     courseName: row.maps?.name ?? "Course",
     raceMode: row.race_mode,
     finalTimeSec: row.final_time_sec,

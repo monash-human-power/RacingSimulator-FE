@@ -6,7 +6,11 @@ import { Pause, Play, Square } from "lucide-react";
 import { LiveOverlays } from "@/components/live-overlays";
 import { RaceScene } from "@/components/race-scene";
 import { useAppContext } from "@/lib/app-context";
-import { applyDeviceTelemetry, readUseDeviceDataFlag } from "@/lib/device-live";
+import { applyDeviceTelemetry, readUseDeviceDataFlag, shouldUseKickrProgress } from "@/lib/device-live";
+import {
+  resetKickrCourseProgressTracking,
+  useKickrLiveMetrics,
+} from "@/lib/hooks/use-kickr-course-progress";
 import { buildSessionSummary, generateInitialLiveState, tickLiveState } from "@/lib/session-utils";
 import { api } from "@/lib/api";
 
@@ -23,20 +27,27 @@ export default function LiveSessionPage() {
     setSessionHistory,
     setLastSummary,
     deviceTelemetry,
-    deviceConnected,
   } = useAppContext();
 
-  const useDeviceData =
-    !setupConfig.skipDeviceChecks && readUseDeviceDataFlag() && deviceConnected && Boolean(deviceTelemetry);
+  const useKickrProgress = shouldUseKickrProgress(deviceTelemetry, readUseDeviceDataFlag());
+  const useDeviceData = !setupConfig.skipDeviceChecks && useKickrProgress;
 
   const rider = riders.find((r) => r.id === setupConfig.riderId) ?? riders[0];
   const course = courses.find((c) => c.id === setupConfig.courseId) ?? courses[0];
 
   useEffect(() => {
     if (!liveSession) {
+      resetKickrCourseProgressTracking();
       setLiveSession(generateInitialLiveState(setupConfig));
     }
   }, [liveSession, setLiveSession, setupConfig]);
+
+  const kickrMetrics = useKickrLiveMetrics(
+    liveSession,
+    deviceTelemetry,
+    setupConfig.laps,
+    useKickrProgress,
+  );
 
   useEffect(() => {
     if (activeSessionId || !setupConfig.riderId || !setupConfig.courseId) return;
@@ -64,11 +75,12 @@ export default function LiveSessionPage() {
 
   useEffect(() => {
     if (!liveSession) return;
-    if (liveSession.distanceCompletedKm >= liveSession.totalDistanceKm) {
+    const completedKm = kickrMetrics?.distanceCompletedKm ?? liveSession.distanceCompletedKm;
+    if (completedKm >= liveSession.totalDistanceKm) {
       handleFinish();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveSession?.distanceCompletedKm]);
+  }, [kickrMetrics?.distanceCompletedKm, liveSession?.distanceCompletedKm]);
 
   function handleFinish() {
     if (!liveSession || !activeSessionId || !rider || !course) return;
@@ -114,7 +126,12 @@ export default function LiveSessionPage() {
     return <div className="min-h-screen bg-[#070b14]" />;
   }
 
-  const progress = Math.min(100, (liveSession.distanceCompletedKm / liveSession.totalDistanceKm) * 100);
+  const simulatedProgress = Math.min(
+    100,
+    (liveSession.distanceCompletedKm / liveSession.totalDistanceKm) * 100,
+  );
+  const progress = kickrMetrics?.progressPct ?? simulatedProgress;
+  const sceneSpeed = kickrMetrics?.speed ?? liveSession.speed;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-100 via-slate-100 to-slate-200 p-4 text-slate-900 md:p-6">
@@ -126,9 +143,9 @@ export default function LiveSessionPage() {
               {course.name} • {setupConfig.raceMode}
             </p>
             <p className="text-sm text-slate-600">{`${rider.firstName} ${rider.lastName}`}</p>
-            {useDeviceData ? (
+            {useKickrProgress ? (
               <p className="mt-1 text-xs font-medium text-emerald-700">
-                Live trainer data • {deviceTelemetry?.deviceName ?? "BLE device"}
+                Live trainer data • {deviceTelemetry?.deviceName ?? "KICKR"}
               </p>
             ) : (
               <p className="mt-1 text-xs text-slate-500">Simulator mode</p>
@@ -157,7 +174,7 @@ export default function LiveSessionPage() {
           </div>
         </div>
 
-        <RaceScene progress={progress} speed={liveSession.speed} paused={liveSession.isPaused} />
+        <RaceScene progress={progress} speed={sceneSpeed} paused={liveSession.isPaused} />
 
         <div className="rounded-2xl border border-slate-300/90 bg-white/80 p-3 shadow-[0_8px_26px_rgba(15,23,42,0.12)]">
           <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
@@ -172,7 +189,12 @@ export default function LiveSessionPage() {
           </div>
         </div>
 
-        <LiveOverlays live={liveSession} setup={setupConfig} />
+        <LiveOverlays
+          live={liveSession}
+          setup={setupConfig}
+          courseName={course.name}
+          kickrMetrics={kickrMetrics}
+        />
       </div>
     </div>
   );

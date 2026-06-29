@@ -1,34 +1,53 @@
 import { formatDuration } from "@/lib/session-utils";
+import { KickrLiveMetrics } from "@/lib/device-live";
 import { LiveSessionState, SetupConfig } from "@/lib/types";
 
 export function LiveOverlays({
   live,
   setup,
+  courseName,
+  kickrMetrics,
 }: {
   live: LiveSessionState;
   setup: SetupConfig;
+  courseName: string;
+  kickrMetrics?: KickrLiveMetrics | null;
 }) {
-  const remaining = Math.max(0, live.totalDistanceKm - live.distanceCompletedKm);
-  const progress = Math.min(100, (live.distanceCompletedKm / live.totalDistanceKm) * 100);
-  const targetDelta = live.power - live.targetPower;
+  const distanceCompletedKm = kickrMetrics?.distanceCompletedKm ?? live.distanceCompletedKm;
+  const remaining = Math.max(0, live.totalDistanceKm - distanceCompletedKm);
+  const progress =
+    kickrMetrics?.progressPct ??
+    Math.min(100, (live.distanceCompletedKm / live.totalDistanceKm) * 100);
+  const speed = kickrMetrics?.speed ?? live.speed;
+  const power = kickrMetrics?.power ?? live.power;
+  const cadence = kickrMetrics?.cadence ?? live.cadence;
+  const heartRate = kickrMetrics?.heartRateBpm ?? live.heartRate;
+  const currentLap = kickrMetrics?.currentLap ?? live.currentLap;
+  const projectedFinish = kickrMetrics?.projectedFinish ?? live.projectedFinish;
+  const sectionLabel = kickrMetrics?.sectionLabel ?? live.sectionLabel;
+  const effortZone = kickrMetrics?.effortZone ?? live.effortZone;
+  const targetDelta = power - live.targetPower;
 
   return (
     <div className="grid gap-3 md:grid-cols-4">
-      <Overlay label="Speed" value={`${live.speed.toFixed(1)} km/h`} />
+      <Overlay label="Speed" value={`${speed.toFixed(1)} km/h`} />
       <Overlay
         label="Power"
-        value={`${live.power} W`}
+        value={`${power} W`}
         detail={targetDelta >= 0 ? `+${targetDelta} vs target` : `${targetDelta} vs target`}
       />
-      <Overlay label="Cadence" value={`${live.cadence} rpm`} />
-      <Overlay label="Heart Rate" value={`${live.heartRate} bpm`} />
+      <Overlay label="Cadence" value={`${cadence} rpm`} />
+      <Overlay
+        label="Heart Rate"
+        value={kickrMetrics && kickrMetrics.heartRateBpm == null ? "—" : `${heartRate} bpm`}
+      />
       <Overlay label="Distance Left" value={`${remaining.toFixed(1)} km`} />
       <Overlay label="Elapsed" value={formatDuration(live.elapsedSec)} />
-      <Overlay label="Lap" value={`${live.currentLap} / ${setup.laps}`} />
-      <Overlay label="Projected Finish" value={live.projectedFinish} />
+      <Overlay label="Lap" value={`${currentLap} / ${setup.laps}`} />
+      <Overlay label="Projected Finish" value={projectedFinish} />
       <Overlay label="Mode" value={setup.raceMode} />
-      <Overlay label="Course" value={live.sectionLabel} detail={setup.courseId} />
-      <Overlay label="Effort Zone" value={live.effortZone} />
+      <Overlay label="Course" value={sectionLabel} detail={courseName} />
+      <Overlay label="Effort Zone" value={effortZone} />
       <Overlay label="Lap Progress" value={`${progress.toFixed(0)}%`} />
     </div>
   );

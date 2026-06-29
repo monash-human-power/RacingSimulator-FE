@@ -80,6 +80,57 @@ export default function LiveSessionPage() {
       liveSession,
       setupConfig.laps,
     );
+    // -------------------------------------------------------------------------
+    // Build analysis notes from the real session data instead of hardcoded text.
+    // liveSession.metricsTimeline is an array of { t, speed, power, cadence, heartRate }
+    // recorded every second throughout the session.
+    // -------------------------------------------------------------------------
+    const timeline = liveSession.metricsTimeline;
+    const lapDurationSec = Math.max(1, summary.finalTimeSec / setupConfig.laps);
+    const targetPower = Math.round(summary.avgPower * 1.05); // target = 5% above what they averaged
+    const speedTarget = Math.round(summary.avgSpeed * 1.05);
+    const hrCap = Math.min(195, Math.round(summary.avgHeartRate * 1.08));
+
+    // Peak power — find the highest single-second power reading and which lap it fell in
+    const peakPowerPoint = timeline.reduce(
+      (best, p) => (p.power > best.power ? p : best),
+      timeline[0] ?? { t: 0, power: summary.avgPower, speed: 0, cadence: 0, heartRate: 0 },
+    );
+    const peakLap = Math.min(setupConfig.laps, Math.ceil(peakPowerPoint.t / lapDurationSec));
+    const peakOverTarget = peakPowerPoint.power - targetPower;
+    const peakOutputNote =
+      peakOverTarget > 0
+        ? `Lap ${peakLap} peak hit ${peakPowerPoint.power}W — ${peakOverTarget}W over target.`
+        : `Lap ${peakLap} peak hit ${peakPowerPoint.power}W — ${Math.abs(peakOverTarget)}W under target.`;
+
+    // Lowest cadence — find the weakest cadence point and note when it happened
+    const lowCadencePoint = timeline.reduce(
+      (worst, p) => (p.cadence < worst.cadence ? p : worst),
+      timeline[0] ?? { t: 0, cadence: 999, power: 0, speed: 0, heartRate: 0 },
+    );
+    const lowCadencePct = Math.round((lowCadencePoint.t / Math.max(summary.finalTimeSec, 1)) * 100);
+    const dropZoneNote = `Cadence dropped to ${Math.round(lowCadencePoint.cadence)} rpm at ${lowCadencePct}% through the session.`;
+
+    // Peak heart rate — find the highest HR and when it happened
+    const peakHrPoint = timeline.reduce(
+      (best, p) => (p.heartRate > best.heartRate ? p : best),
+      timeline[0] ?? { t: 0, heartRate: summary.avgHeartRate, power: 0, speed: 0, cadence: 0 },
+    );
+    const peakHrPct = Math.round((peakHrPoint.t / Math.max(summary.finalTimeSec, 1)) * 100);
+    const keyMomentNote = `Heart rate peaked at ${peakHrPoint.heartRate} bpm at ${peakHrPct}% through the session.`;
+
+    // Overall insight — compare avg power to target, and whether HR stayed controlled
+    const powerDiff = summary.avgPower - targetPower;
+    const hrControlled = summary.avgHeartRate <= hrCap;
+    const powerComment =
+      powerDiff >= 0
+        ? `Averaged ${summary.avgPower}W — ${powerDiff}W above target.`
+        : `Averaged ${summary.avgPower}W — ${Math.abs(powerDiff)}W below target.`;
+    const hrComment = hrControlled
+      ? `Heart rate stayed controlled at avg ${summary.avgHeartRate} bpm.`
+      : `Heart rate ran high at avg ${summary.avgHeartRate} bpm — consider pacing adjustments.`;
+    const insight = `${powerComment} ${hrComment}`;
+
     void (async () => {
       await api.completeSession(activeSessionId, {
         finalTimeSec: summary.finalTimeSec,
@@ -90,12 +141,11 @@ export default function LiveSessionPage() {
         lapTimesSec: summary.lapTimesSec ?? [],
         metricsTimeline: liveSession.metricsTimeline,
         analysisSummary: {
-          peakOutputNote: "Lap 3 sprint sustained +42W over target.",
-          dropZoneNote: "Cadence dip in technical descent section.",
-          keyMomentNote: "Recovered pacing within 22 seconds after surge.",
-          insight:
-            "Strong mid-session consistency with late fatigue trend. Next target: lift cadence in final 20% while maintaining heart-rate control.",
-          actualVsTarget: { powerTarget: 275, speedTarget: 33, hrCap: 165 },
+          peakOutputNote,
+          dropZoneNote,
+          keyMomentNote,
+          insight,
+          actualVsTarget: { powerTarget: targetPower, speedTarget, hrCap },
         },
       });
       await saveSetupConfig(setupConfig, "completed");

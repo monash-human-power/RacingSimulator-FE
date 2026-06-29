@@ -69,7 +69,7 @@ export default function SessionReviewPage() {
 
       <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm font-semibold">Session Timeline Scrubber (Mock)</p>
+          <p className="text-sm font-semibold">Session Timeline</p>
           <input type="range" min={0} max={100} defaultValue={73} className="mt-4 w-full accent-cyan-400" />
           <div className="mt-4 grid gap-3 md:grid-cols-3 text-sm">
             <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 p-3">
@@ -96,9 +96,24 @@ export default function SessionReviewPage() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm font-semibold">Actual vs Target</p>
           <div className="mt-4 space-y-3 text-sm">
-            <ProgressRow label="Power Target" actual={lastSummary.avgPower} target={275} unit="W" />
-            <ProgressRow label="Speed Target" actual={lastSummary.avgSpeed} target={33} unit="km/h" />
-            <ProgressRow label="HR Cap" actual={lastSummary.avgHeartRate} target={165} unit="bpm" />
+            <ProgressRow
+              label="Power Target"
+              actual={lastSummary.avgPower}
+              target={detail?.analysis?.actual_vs_target?.powerTarget ?? Math.round(lastSummary.avgPower * 1.05)}
+              unit="W"
+            />
+            <ProgressRow
+              label="Speed Target"
+              actual={lastSummary.avgSpeed}
+              target={detail?.analysis?.actual_vs_target?.speedTarget ?? Math.round(lastSummary.avgSpeed * 1.05)}
+              unit="km/h"
+            />
+            <ProgressRow
+              label="HR Cap"
+              actual={lastSummary.avgHeartRate}
+              target={detail?.analysis?.actual_vs_target?.hrCap ?? Math.round(lastSummary.avgHeartRate * 1.08)}
+              unit="bpm"
+            />
           </div>
           <div className="mt-5 rounded-xl border border-indigo-300/25 bg-indigo-400/10 p-4">
             <p className="font-semibold text-indigo-100">Performance Insight</p>
